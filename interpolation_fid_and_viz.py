@@ -130,13 +130,6 @@ def main():
         raise NotImplementedError("No implemntation for " +
                                   str(config.configurations[maj_cfg_idx][0]['base_model_name']) + " found.")
 
-    # # # Compute precission and recall
-    # prd.compute_prd(reference_dir=os.path.join(log_dir, 'recon_original'),
-    #                 eval_dirs=[os.path.join(log_dir, 'one_gaussian_sampled'),
-    #                            os.path.join(log_dir, 'GMM_10_sampled'),],
-    #                 inception_path='/ps/scratch/pghosh/frozenModelsICCV_full/high_res_vae/'
-    #                                'frozen_inception_v1_2015_12_05/inceptionv1_for_inception_score.pb')
-    #
 
     multi_output_enc = False
     if len(encoder.outputs) > 1:
@@ -203,19 +196,6 @@ def main():
         else:
             zs_test = np.load(os.path.join(log_dir, model_name[:-2] + '_' + expt_name + '_' + '_test_embedding.npz'))['zs']
 
-    latent_sapce_sampler = LatentSpaceSampler(encoder, compute_z_cov=compute_z_cov)
-
-    # # the following training_images are for training latentspace variance it doesn't matter much any more. Dont panic!
-    # if test_generator is None:
-    #     training_images = get_n_batches_of_input(batches, train_generator)
-    # else:
-    #     training_images = get_n_batches_of_input(batches, validation_generator)
-    #
-    # if config.configurations[maj_cfg_idx][0]['base_model_name'].upper().find('REDUCED') < 0:
-    #     # For any model other than ours zs should be sampled from std normal. The following flag forces that
-    #     latent_sapce_sampler.multi_output_encoder = True
-    #
-    # zs = latent_sapce_sampler.get_zs(training_images)
 
     np.random.seed(2)
     tf.random.set_random_seed(2)
@@ -240,7 +220,7 @@ def main():
     # # qz_est_name_list = ['KDE']
     # # qz_est_name_list = ['given_zs']
     # qz_est_name_list = ['aux_vae']
-    qz_est_name_list = ['GMM_10']
+    qz_est_name_list = ['GMM_10', 'aux_vae']
     qz_samplers = []
     for estimator_name in qz_est_name_list:
         ## Q(z) estimation
@@ -282,6 +262,14 @@ def main():
                                                 os.path.join(log_dir, estimator_name+'_sampled'))))
         qz_samplers.append(qz_sampler)
         print ("Time taken to FID " + str(time.time() - start))
+
+    # # Compute precission and recall
+    prd.compute_prd(reference_dir=os.path.join(log_dir, 'recon_original'),
+                    eval_dirs=[os.path.join(log_dir, 'one_gaussian_sampled'),
+                               os.path.join(log_dir, 'GMM_10_sampled'),],
+                    inception_path='/ps/scratch/pghosh/frozenModelsICCV_full/high_res_vae/'
+                                   'frozen_inception_v1_2015_12_05/inceptionv1_for_inception_score.pb')
+
 
     print("Recon starting")
     np.random.seed(2)
@@ -434,72 +422,6 @@ def main():
             save_batches_of_images.save_set_of_images(os.path.join(linear_interpolation_dir,
                                                                    str(current_pair[0])+'_'+str(current_pair[1])),
                                                       interpolated_iamges)
-
-    # ## linear interpolation_rescaled
-    # for sampler_idx, qz_est_name in enumerate(qz_est_name_list):
-    #     linear_interpolation_dir = os.path.join(interpolation_root, 'linear_interpolation_re_scaled_viz' + qz_est_name)
-    #     if not os.path.exists(linear_interpolation_dir):
-    #         os.mkdir(linear_interpolation_dir)
-    #     pairs = pairs_interpolation[config.configurations[maj_cfg_idx][0]['dataset_name']]
-    #     for i in range(20):
-    #         current_pair = pairs[i]
-    #         interp_points = np.linspace(0, 1, num_interpolation_pts)
-    #         if qz_est_name.upper().find("AUX_VAE") >= 0:
-    #             zs_test_2nd_stage = qz_samplers[sampler_idx].model.encoder.predict(
-    #                 (valid_embd - qz_samplers[sampler_idx].model.data_mean) / qz_samplers[sampler_idx].model.data_std)[0]
-    #
-    #             z_intrps_2nd_stage = zs_test_2nd_stage[current_pair[0]].reshape(-1, 1) + \
-    #                                  (zs_test_2nd_stage[current_pair[1]].reshape(-1, 1) -
-    #                                  zs_test_2nd_stage[current_pair[0]].reshape(-1, 1)) * interp_points
-    #             z_intrps_2nd_stage = (z_intrps_2nd_stage/np.linalg.norm(z_intrps_2nd_stage, axis=0))*\
-    #                                  (np.linalg.norm(zs_test[current_pair[0]].reshape(-1, 1), axis=0) +
-    #                                  (np.linalg.norm(zs_test[current_pair[1]].reshape(-1, 1), axis=0) -
-    #                                   np.linalg.norm(zs_test[current_pair[0]].reshape(-1, 1), axis=0)) * interp_points)
-    #             z_interps_dnorm = qz_sampler.model.decoder.predict(z_intrps_2nd_stage.T) * \
-    #                               qz_samplers[sampler_idx].model.data_std + qz_samplers[sampler_idx].model.data_mean
-    #         else:
-    #             pass
-    #             # TODO(Partha): Complete it pls
-    #         interpolated_iamges = decoder.predict(z_interps_dnorm)
-    #         save_batches_of_images.save_set_of_images(os.path.join(linear_interpolation_dir,
-    #                                                                str(current_pair[0]) + '_' + str(current_pair[1])),
-    #                                                   interpolated_iamges)
-
-    # ## spherical interpolation
-    # spherical_interpolation_dir = os.path.join(interpolation_root, 'spherical_interpolation_viz')
-    #
-    # if not os.path.exists(spherical_interpolation_dir):
-    #     os.mkdir(spherical_interpolation_dir)
-    # # pairs = itertools.combinations(pairs_indices, 2)
-    # for i in range(20):
-    #     current_pair = pairs[i]
-    #     z_intrps = interpolations.slerpolate(zs_trn[current_pair[0]], zs_trn[current_pair[1]],
-    #                                          C=None,  # latent_sapce_sampler.get_z_cov(),
-    #                                          num_pts=num_interpolation_pts).T
-    #     interpolated_iamges = decoder.predict(z_intrps)
-    #     save_batches_of_images.save_set_of_images(os.path.join(spherical_interpolation_dir,
-    #                                                            str(current_pair[0]) + '_' + str(current_pair[1])),
-    #                                               interpolated_iamges)
-
-    # ## Computing mone carlo approx of log(p(x))
-    # # these are training images for finding correct z distribution and not the training images for the original model
-    # log_P_X_x = np.zeros(training_images.shape[0])
-    # # TODO(Partha): The following must be verified !!
-    # sigma_inv_P_X_z = np.eye(training_images[0].flatten().shape[0])  # This must be estiamded for different models i think
-    # det_sigma = np.linalg.det(sigma_inv_P_X_z)
-    # err_sqr = np.zeros(sampled_images.shape[0])
-    # for i, qz_sampler in enumerate(qz_samplers):
-    #     zs = qz_sampler.get_samples(training_images.shape[0])
-    #     sampled_images = decoder.predict(zs, batch_size=200)
-    #     for j, tr_img in enumerate(training_images):
-    #         for k, smpl_img in enumerate(sampled_images):
-    #             err = tr_img.flatten() - smpl_img.flatten()
-    #             err_sqr[k] = -0.5*np.matmul(np.matmul(err.T, sigma_inv_P_X_z), err)
-    #         log_P_X_x[j] = misc.logsumexp(err_sqr)
-    #         log_P_X_x[j] -= np.log(np.sqrt(2*np.pi*det_sigma))
-    #
-    #     print("Method: " + qz_est_name_list[i] + ", log(P(X)) = " + str(np.sum(log_P_X_x)) + "var(log(P(X=x))) = " +
-    #           str(np.var(log_P_X_x)))
 
 
 if __name__ == "__main__":
