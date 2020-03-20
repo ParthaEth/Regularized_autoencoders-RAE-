@@ -1,0 +1,29 @@
+executable = cluster_run.sh
+arguments = $(Process) -alht
+error = /is/cluster/work/pghosh/high_res_vae/logs/test_$(Process).err
+output = /is/cluster/work/pghosh/high_res_vae/logs/test_$(Process).out
+log = /is/cluster/work/pghosh/high_res_vae/logs/test_$(Process).log
+request_memory = 64000
+request_gpus = 1
+request_cpus = 1
+requirements = CUDAGlobalMemoryMb > 10000
+getenv = True
+
+# max #jobs is given by 10000/ number after : so now 10000/400 = 25
+concurrency_limits=user.biggpus:400
+
+# Maximum expected execution time for the job, in seconds
+MaxTime = 72*3600
+# Number of retries before giving up
+NumRetries = 0
+
+periodic_hold = (CurrentTime - JobCurrentStartDate) >= $(MaxTime)
+periodic_hold_reason = ifThenElse(JobRunCount <= $(NumRetries), "Job runtime exceeded", "Job runtime exceeded, no more retries left")
+periodic_hold_subcode = ifThenElse(JobRunCount <= $(NumRetries), 1, 2)
+
+periodic_release = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && (HoldReasonSubCode =?= 1) )
+
+# Uncomment this line if you want the jobs automatically removed from the queue
+# periodic_remove = ( (JobStatus =?= 5) && (HoldReasonCode =?= 3) && (HoldReasonSubCode =?= 2) )
+
+queue 30
