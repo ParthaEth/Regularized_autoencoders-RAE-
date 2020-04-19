@@ -15,7 +15,7 @@ url={https://openreview.net/forum?id=S1g7tpEYDS}
 [![Watch a presentation](images/presentation_vid.png)](https://www.youtube.com/embed/TiIuFt1KvJ4)
 
 ## Full pdf
-You can download a full ODF version of our paper from [https://openreview.net/forum?id=S1g7tpEYDS](https://openreview.net/forum?id=S1g7tpEYDS)
+You can download a full PDF version of our paper from [https://openreview.net/forum?id=S1g7tpEYDS](https://openreview.net/forum?id=S1g7tpEYDS)
 
 ## Set up
 * Create a virtual environment `virtualenv --no-site-packages <your_home_dir>/.virtualenvs/rae`
