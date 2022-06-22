@@ -9,7 +9,7 @@ Keras==2.3.1
 Keras-Applications==1.0.8
 Keras-Preprocessing==1.1.0
 Markdown==3.1.1
-numpy==1.17.2
+numpy==1.22.0
 opt-einsum==3.1.0
 Pillow==7.0.0
 pkg-resources==0.0.0
